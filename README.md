@@ -37,6 +37,15 @@ Trust is never automatic, in either direction:
 Passwords never go in the configuration file: `password_env` names the environment variable that holds them. Errors
 carry the OPC UA StatusCode name, the specification's description and a suggested next step.
 
+## Install
+
+Download the archive for your platform from the [releases](../../releases) page, unpack it, and point your MCP client
+at the `proxus-mcp` binary (see Claude Desktop below). Each archive has a `.sha256` file next to it. The binaries are
+not code-signed yet: on macOS run `xattr -d com.apple.quarantine proxus-mcp` once after unpacking, and on Windows
+choose "More info, Run anyway" the first time.
+
+`proxus-mcp --version` prints the version.
+
 ## Build
 
 Needs the .NET 10 SDK. The protocol drivers come from the [Proxus.Drivers](https://github.com/proxusiiotplatform/proxus-drivers) NuGet packages (Apache-2.0).

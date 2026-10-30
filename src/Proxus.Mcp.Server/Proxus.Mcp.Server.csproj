@@ -2,6 +2,8 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <AssemblyName>proxus-mcp</AssemblyName>
+        <!-- Release builds set -p:Version from the tag. -->
+        <Version>0.1.0-dev</Version>
         <RootNamespace>Proxus.Mcp</RootNamespace>
         <PublishAot>true</PublishAot>
         <InvariantGlobalization>true</InvariantGlobalization>
