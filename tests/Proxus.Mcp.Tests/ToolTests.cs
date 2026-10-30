@@ -98,6 +98,21 @@ public sealed class ToolTests : IAsyncDisposable
         Assert.Equal("INVALID_ARGUMENT", ErrorCode(Parse(await tools.ReadNodes("press", Enumerable.Repeat("i=1", 51).ToArray())).Json));
     }
 
+    [Theory]
+    [InlineData(0, 10, 500)]
+    [InlineData(1, 0, 500)]
+    [InlineData(1, 61, 500)]
+    [InlineData(1, 10, 50)]
+    [InlineData(21, 10, 500)]
+    public async Task Watch_arguments_are_checked_before_any_network_traffic(int nodes, int seconds, int samplingMs)
+    {
+        var ids = Enumerable.Repeat("i=2258", nodes).ToArray();
+        var (isError, json) = Parse(await new OpcUaTools(_sessions).WatchNodes("press", ids, seconds, samplingMs));
+
+        Assert.True(isError);
+        Assert.Equal("INVALID_ARGUMENT", ErrorCode(json));
+    }
+
     [Fact]
     public async Task Closed_port_is_a_connection_error_with_a_next_step()
     {

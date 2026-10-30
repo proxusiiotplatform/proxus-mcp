@@ -11,6 +11,7 @@ Gives AI assistants such as Claude Desktop, Cursor and VS Code read-only access 
 | `decode_registers` | Up to 16 registers read every common way: int16/32, uint, float32 in ABCD/CDAB/BADC/DCBA, float64 in both word orders |
 | `browse` | Children of an OPC UA node (default: Objects folder) |
 | `read_nodes` | Up to 50 OPC UA variables with data type, quality, status code and source timestamp |
+| `watch_nodes` | Watches up to 20 OPC UA variables for 1–60 s through a subscription: every change, plus first, last, min, max and average |
 | `diagnose_connection` | Why a device can't be reached: name, TCP, protocol handshake, security and certificates, login, a test read, identity and clock, step by step with the next thing to try |
 
 Nothing can write to a device.
