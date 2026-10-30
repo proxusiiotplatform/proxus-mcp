@@ -42,7 +42,7 @@ jobs:
             echo "::error::Tag $TAG is not v<major>.<minor>.<patch>[-pre-release]."
             exit 1
           fi
-          git fetch --no-tags origin main
+          # fetch-depth: 0 already brought origin/main; fetching again would need the credentials this job drops.
           if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
             echo "::error::Tag $TAG is not on main."
             exit 1
