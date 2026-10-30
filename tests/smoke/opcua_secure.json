@@ -1,0 +1,12 @@
+{
+  "pki_dir": "pki-test",
+  "devices": {
+    "b256":        { "protocol": "opc-ua", "endpoint": "opc.tcp://127.0.0.1:14841/secure", "security_mode": "sign_and_encrypt", "security_policy": "Basic256Sha256" },
+    "b256-sign":   { "protocol": "opc-ua", "endpoint": "opc.tcp://127.0.0.1:14841/secure", "security_mode": "sign", "security_policy": "Basic256Sha256" },
+    "aes":         { "protocol": "opc-ua", "endpoint": "opc.tcp://127.0.0.1:14841/secure", "security_mode": "sign_and_encrypt", "security_policy": "Aes256_Sha256_RsaPss" },
+    "user":        { "protocol": "opc-ua", "endpoint": "opc.tcp://127.0.0.1:14841/secure", "security_mode": "sign_and_encrypt", "username": "op", "password_env": "PROXUS_TEST_PW" },
+    "bad-user":    { "protocol": "opc-ua", "endpoint": "opc.tcp://127.0.0.1:14841/secure", "security_mode": "sign_and_encrypt", "username": "op", "password_env": "PROXUS_TEST_WRONG_PW" },
+    "not-offered": { "protocol": "opc-ua", "endpoint": "opc.tcp://127.0.0.1:14841/secure", "security_mode": "sign", "security_policy": "Aes256_Sha256_RsaPss" },
+    "strict":      { "protocol": "opc-ua", "endpoint": "opc.tcp://127.0.0.1:14842/secure", "security_mode": "sign_and_encrypt" }
+  }
+}

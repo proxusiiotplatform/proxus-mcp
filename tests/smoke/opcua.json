@@ -1,0 +1,7 @@
+{
+  "devices": {
+    "line1-ua": { "protocol": "opc-ua", "endpoint": "opc.tcp://127.0.0.1:14840/demo", "path": "Demo/Plant/Assembly/Line1" },
+    "meter-1": { "protocol": "modbus-tcp", "host": "127.0.0.1", "port": 15020 },
+    "ua-locked": { "protocol": "opc-ua", "endpoint": "opc.tcp://127.0.0.1:14840/demo", "username": "op", "password_env": "PROXUS_TEST_UNSET_PW" }
+  }
+}

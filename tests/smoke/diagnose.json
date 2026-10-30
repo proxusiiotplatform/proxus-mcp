@@ -1,0 +1,14 @@
+{
+  "pki_dir": "pki-diagnose",
+  "devices": {
+    "mb-ok":         { "protocol": "modbus-tcp", "host": "127.0.0.1", "port": 15020 },
+    "mb-refused":    { "protocol": "modbus-tcp", "host": "127.0.0.1", "port": 15999 },
+    "mb-silent":     { "protocol": "modbus-tcp", "host": "127.0.0.1", "port": 15030, "timeout_ms": 1000 },
+    "mb-dns":        { "protocol": "modbus-tcp", "host": "no-such-plc.invalid" },
+    "mb-blackhole":  { "protocol": "modbus-tcp", "host": "10.255.255.1", "timeout_ms": 1000 },
+    "ua-open":       { "protocol": "opc-ua", "endpoint": "opc.tcp://127.0.0.1:14840/demo" },
+    "ua-wrong-port": { "protocol": "opc-ua", "endpoint": "opc.tcp://127.0.0.1:15030", "timeout_ms": 1000 },
+    "ua-secure":     { "protocol": "opc-ua", "endpoint": "opc.tcp://127.0.0.1:14841/secure", "security_mode": "sign_and_encrypt" },
+    "ua-strict":     { "protocol": "opc-ua", "endpoint": "opc.tcp://127.0.0.1:14842/secure", "security_mode": "sign_and_encrypt" }
+  }
+}

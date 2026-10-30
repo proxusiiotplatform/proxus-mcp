@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+
+jobs:
+  build:
+    name: ${{ matrix.rid }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-24.04, rid: linux-x64, exe: proxus-mcp }
+          - { os: ubuntu-24.04-arm, rid: linux-arm64, exe: proxus-mcp }
+          - { os: windows-2025, rid: win-x64, exe: proxus-mcp.exe }
+          - { os: macos-15, rid: osx-arm64, exe: proxus-mcp }
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: proxus-mcp
+      # The Apache-2.0 drivers (ADR 0043 in Proxus.Drivers) until they are on NuGet. The repository is private,
+      # so DRIVERS_TOKEN is a fine-grained token with read access to it.
+      - uses: actions/checkout@v4
+        with:
+          repository: proxusiiotplatform/Proxus.Drivers
+          token: ${{ secrets.DRIVERS_TOKEN }}
+          path: Proxus.Drivers
+          sparse-checkout: |
+            global.json
+            Directory.Build.props
+            Directory.Build.targets
+            src/Proxus.Drivers.Abstractions
+            src/Proxus.Drivers.Core
+            src/Proxus.Drivers.Modbus
+            src/Proxus.Drivers.OpcUa
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: proxus-mcp/global.json
+
+      - name: Unit tests
+        working-directory: proxus-mcp
+        run: dotnet test tests/Proxus.Mcp.Tests -c Release
+
+      - name: Publish (Native AOT)
+        working-directory: proxus-mcp
+        run: dotnet publish src/Proxus.Mcp.Server -c Release -r ${{ matrix.rid }} -o artifacts/${{ matrix.rid }} -warnaserror
+
+      - name: Answers an MCP initialize over stdio
+        working-directory: proxus-mcp
+        run: |
+          echo '{"devices":{"m":{"protocol":"modbus-tcp","host":"127.0.0.1"}}}' > ci.json
+          { echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}'; sleep 5; } \
+            | ./artifacts/${{ matrix.rid }}/${{ matrix.exe }} --config ci.json > reply.txt || true
+          grep -q '"name":"proxus-mcp"' reply.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: proxus-mcp-${{ matrix.rid }}
+          path: |
+            proxus-mcp/artifacts/${{ matrix.rid }}/${{ matrix.exe }}
+            proxus-mcp/README.md
+            proxus-mcp/proxus-mcp.example.json
+          if-no-files-found: error
+
+  smoke:
+    name: smoke (simulators)
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: proxus-mcp-linux-x64
+          path: bin
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Simulators
+        run: python -m pip install --quiet pymodbus==3.12.0 asyncua==1.1.8
+      - name: Smoke tests
+        run: |
+          chmod +x bin/artifacts/linux-x64/proxus-mcp
+          tests/smoke/run_all.sh bin/artifacts/linux-x64/proxus-mcp "$(command -v python)"

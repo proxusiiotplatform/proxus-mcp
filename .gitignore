@@ -1,0 +1,8 @@
+bin/
+obj/
+artifacts/
+*.user
+pki/
+pki-test/
+.venv/
+pki-diagnose/

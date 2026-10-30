@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Proxus.Mcp.Server/Proxus.Mcp.Server.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Proxus.Mcp.Tests/Proxus.Mcp.Tests.csproj" />
+  </Folder>
+</Solution>

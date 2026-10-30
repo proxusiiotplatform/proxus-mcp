@@ -1,0 +1,25 @@
+{
+  // OPC UA certificates: own/, trusted/, rejected/. Relative to this file.
+  "pki_dir": "pki",
+  // Every device the server may reach. Nothing outside this file is reachable.
+  "devices": {
+    "meter-1": {
+      "protocol": "modbus-tcp",
+      "host": "192.168.10.40",
+      "port": 502,
+      "unit_id": 1,
+      "path": "Acme/Gebze/Energy/Meter1",
+      "timeout_ms": 3000
+    },
+    "press-3": {
+      "protocol": "opc-ua",
+      "endpoint": "opc.tcp://192.168.10.21:4840",
+      "path": "Acme/Gebze/Press/Line3",
+      "security_mode": "sign_and_encrypt",
+      "security_policy": "Basic256Sha256",
+      // Omit username for an anonymous login. The password is read from this environment variable.
+      "username": "mcp-reader",
+      "password_env": "PRESS3_OPCUA_PASSWORD"
+    }
+  }
+}
