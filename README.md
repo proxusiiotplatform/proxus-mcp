@@ -2,6 +2,10 @@
 
 Gives AI assistants such as Claude Desktop, Cursor and VS Code read-only access to industrial devices. Supports Modbus TCP and OPC UA (Basic256Sha256 or Aes256_Sha256_RsaPss with Sign or SignAndEncrypt, or unsecured; anonymous or user-name login).
 
+![An AI assistant reads a PLC, decodes a meter value and diagnoses a device that does not answer](docs/demo.svg)
+
+*Condensed from a real session against simulated devices ([docs/demo.json](docs/demo.json)). More at [proxus.io/tools/industrial-mcp-server](https://proxus.io/tools/industrial-mcp-server/).*
+
 ## Tools
 
 | Tool | What it does |
