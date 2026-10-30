@@ -1,0 +1,38 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.proxusiiotplatform/proxus-mcp",
+  "title": "Proxus Industrial MCP Server",
+  "description": "Read-only Modbus TCP and OPC UA access to PLCs and industrial devices, with connection diagnostics",
+  "version": "0.1.0-beta.5",
+  "websiteUrl": "https://proxus.io/tools/industrial-mcp-server",
+  "repository": {
+    "url": "https://github.com/proxusiiotplatform/proxus-mcp",
+    "source": "github",
+    "id": "1439501080"
+  },
+  "packages": [
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/proxusiiotplatform/proxus-mcp:0.1.0-beta.5",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeArguments": [
+        {
+          "type": "named",
+          "name": "-v",
+          "description": "Folder that holds proxus-mcp.json (the devices the server may reach) and its OPC UA certificates",
+          "value": "{config_dir}:/config",
+          "isRequired": true,
+          "variables": {
+            "config_dir": {
+              "description": "Absolute path of the folder with proxus-mcp.json",
+              "format": "filepath",
+              "isRequired": true
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
