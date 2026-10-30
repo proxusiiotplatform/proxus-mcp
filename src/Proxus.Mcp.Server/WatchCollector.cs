@@ -119,6 +119,10 @@ public sealed record WatchResult(
     List<WatchedNode>? Nodes,
     ToolError? Error)
 {
+    /// <summary>Polled protocols only (Modbus): how many reads ran and how many failed.</summary>
+    public int? Reads { get; init; }
+    public int? FailedReads { get; init; }
+
     public static WatchResult Failed(string device, DriverError error)
     {
         return new WatchResult(device, null, null, null, null, ToolError.From(error));

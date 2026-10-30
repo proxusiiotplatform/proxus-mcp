@@ -28,7 +28,8 @@ expect() { # expect <output> <text>...
 }
 
 out=$(python3 modbus_smoke.py "$BIN" modbus.json)
-expect "$out" '"value":"230.5"' 'count must be between 1 and 125' 'UNKNOWN_DEVICE' 'MODBUS_CONNECT'
+expect "$out" '"value":"230.5"' 'count must be between 1 and 125' 'UNKNOWN_DEVICE' 'MODBUS_CONNECT' \
+  '"changeCount":1,"first":"230.5"' '"failedReads":0'
 echo "ok  modbus"
 
 out=$(python3 opcua_smoke.py "$BIN" opcua.json)

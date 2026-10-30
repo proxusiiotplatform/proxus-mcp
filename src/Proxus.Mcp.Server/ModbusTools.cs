@@ -33,6 +33,7 @@ public sealed class ModbusTools(DeviceSessions sessions)
     private const int MaxRegisters = 125; // largest block a single Modbus read (FC03/FC04) returns
     private const int MaxBits = 2000;
     private const int MaxDecodeRegisters = 16;
+    private const int MaxWatchedValues = 16;
 
     [McpServerTool(Name = "read_address", ReadOnly = true, Idempotent = true, OpenWorld = true)]
     [Description("Reads raw Modbus data from a configured device. Address: hr:0 (holding register), ir:0 (input register), coil:0, di:0 with zero-based offsets, or reference notation such as 40001 (holding register 0). Returns raw 16-bit registers or bits. Use decode_registers when the registers hold 32-bit or floating-point values.")]
@@ -108,6 +109,106 @@ public sealed class ModbusTools(DeviceSessions sessions)
             registers.Select(static r => $"0x{r:X4}").ToArray(),
             RegisterDecoder.Decode(registers),
             null), Json.DecodeResult);
+    }
+
+    [McpServerTool(Name = "watch_address", ReadOnly = true, Idempotent = true, OpenWorld = true)]
+    [Description("Polls a Modbus address for a few seconds and returns how the values moved: per value the change count, first and last value, min, max and average, and the most recent changes with timestamps. Registers can be decoded as uint16, int16, uint32, int32 or float32 in byte order ABCD, CDAB, BADC or DCBA (find the right order with decode_registers first). Coils and discrete inputs report true/false. Modbus has no subscriptions, so every interval is one read; keep the interval reasonable for the device.")]
+    public async Task<CallToolResult> WatchAddress(
+        [Description("Device name from list_devices.")] string device,
+        [Description("Start address, e.g. hr:0, ir:12, coil:5 or 40001.")] string address,
+        [Description("Number of values to watch (1-16).")] int count = 1,
+        [Description("Register value type: uint16, int16, uint32, int32 or float32. Ignored for coils and discrete inputs.")] string type = "uint16",
+        [Description("Byte order for 32-bit types: ABCD, CDAB, BADC or DCBA.")] string byteOrder = "ABCD",
+        [Description("How long to watch, in seconds (1-60).")] int durationSeconds = 10,
+        [Description("Time between reads, in milliseconds (200-10000).")] int intervalMs = 1000,
+        CancellationToken cancellationToken = default)
+    {
+        var parsed = ModbusAddress.Parse(address);
+        if (!parsed.IsSuccess)
+            return FailWatch(device, parsed.Error);
+        var isBit = parsed.Value.ObjectType is ModbusObjectType.Coil or ModbusObjectType.DiscreteInput;
+        if (count is < 1 or > MaxWatchedValues)
+            return FailWatch(device, Invalid($"count must be between 1 and {MaxWatchedValues}."));
+        if (!isBit && !RegisterDecoder.ValueTypes.Contains(type))
+            return FailWatch(device, Invalid($"type must be one of {string.Join(", ", RegisterDecoder.ValueTypes)}."));
+        if (!isBit && !RegisterDecoder.IsByteOrder(byteOrder))
+            return FailWatch(device, Invalid("byteOrder must be ABCD, CDAB, BADC or DCBA."));
+        if (durationSeconds is < 1 or > 60)
+            return FailWatch(device, Invalid("durationSeconds must be between 1 and 60."));
+        if (intervalMs is < 200 or > 10_000)
+            return FailWatch(device, Invalid("intervalMs must be between 200 and 10000."));
+
+        var session = await sessions.GetModbusAsync(device, cancellationToken).ConfigureAwait(false);
+        if (!session.IsSuccess)
+            return FailWatch(device, session.Error);
+
+        var width = isBit ? 1 : RegisterDecoder.RegistersPerValue(type);
+        var start = parsed.Value;
+        var names = Enumerable.Range(0, count)
+            .Select(i => (start with { Offset = (ushort)(start.Offset + i * width) }).ToString())
+            .ToList();
+        var collector = new WatchCollector(names);
+        var previous = new string?[count];
+        var registers = new ushort[count * width];
+        var bits = new bool[count];
+        var started = DateTimeOffset.UtcNow;
+        var deadline = started.AddSeconds(durationSeconds);
+        var reads = 0;
+        var failures = 0;
+
+        while (true)
+        {
+            var now = DateTime.UtcNow;
+            DriverResult<int> read = isBit
+                ? start.ObjectType == ModbusObjectType.Coil
+                    ? await session.Value.ReadCoilsAsync(start.Offset, bits, start.UnitId, cancellationToken).ConfigureAwait(false)
+                    : await session.Value.ReadDiscreteInputsAsync(start.Offset, bits, start.UnitId, cancellationToken).ConfigureAwait(false)
+                : await ReadRegistersAsync(session.Value, start, registers, cancellationToken).ConfigureAwait(false);
+            reads++;
+
+            for (var i = 0; i < count; i++)
+            {
+                DriverSample sample;
+                if (!read.IsSuccess)
+                {
+                    sample = new DriverSample(DriverValue.FromFloat64(0), new DriverQuality(DriverQualityLevel.Bad, DriverQualityFlags.CommunicationFailure), now, now);
+                }
+                else
+                {
+                    var value = isBit
+                        ? DriverValue.FromBoolean(bits[i])
+                        : RegisterDecoder.DecodeOne(registers, i * width, type, byteOrder);
+                    sample = DriverSample.Good(value, now, now);
+                }
+
+                // Record changes only, like an OPC UA subscription: the first read and every new value or quality.
+                var text = read.IsSuccess ? sample.Value.ToInvariantString() : null;
+                if (reads > 1 && text == previous[i])
+                    continue;
+                previous[i] = text;
+                collector.Add(WatchCollector.HandleFor(i), sample);
+            }
+
+            if (!read.IsSuccess)
+                failures++;
+            var wait = TimeSpan.FromMilliseconds(intervalMs);
+            if (DateTimeOffset.UtcNow + wait > deadline)
+                break;
+            await Task.Delay(wait, cancellationToken).ConfigureAwait(false);
+        }
+
+        return ToolOutput.Ok(
+            new WatchResult(device, started, Math.Round((DateTimeOffset.UtcNow - started).TotalSeconds, 1), intervalMs, collector.Results(), null)
+            {
+                Reads = reads,
+                FailedReads = failures
+            },
+            Json.WatchResult);
+    }
+
+    private static CallToolResult FailWatch(string device, DriverError error)
+    {
+        return ToolOutput.Failed(WatchResult.Failed(device, error), Json.WatchResult);
     }
 
     private static ToolJsonContext Json => ToolJsonContext.Readable;

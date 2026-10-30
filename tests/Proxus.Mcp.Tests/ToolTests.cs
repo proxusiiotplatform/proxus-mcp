@@ -113,6 +113,22 @@ public sealed class ToolTests : IAsyncDisposable
         Assert.Equal("INVALID_ARGUMENT", ErrorCode(json));
     }
 
+    [Theory]
+    [InlineData("hr:0", 0, "uint16", "ABCD", 10, 1000)]
+    [InlineData("hr:0", 17, "uint16", "ABCD", 10, 1000)]
+    [InlineData("hr:0", 1, "double", "ABCD", 10, 1000)]
+    [InlineData("hr:0", 1, "float32", "XYZW", 10, 1000)]
+    [InlineData("hr:0", 1, "uint16", "ABCD", 61, 1000)]
+    [InlineData("hr:0", 1, "uint16", "ABCD", 10, 100)]
+    [InlineData("zz:0", 1, "uint16", "ABCD", 10, 1000)]
+    public async Task Modbus_watch_arguments_are_checked_before_any_network_traffic(
+        string address, int count, string type, string order, int seconds, int interval)
+    {
+        var (isError, _) = Parse(await new ModbusTools(_sessions).WatchAddress("meter", address, count, type, order, seconds, interval));
+
+        Assert.True(isError);
+    }
+
     [Fact]
     public async Task Closed_port_is_a_connection_error_with_a_next_step()
     {

@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Globalization;
+using Proxus.Drivers;
 
 namespace Proxus.Mcp;
 
@@ -17,6 +18,35 @@ public static class RegisterDecoder
         ("BADC", [1, 0, 3, 2]), // byte swap
         ("DCBA", [3, 2, 1, 0])  // little-endian
     ];
+
+    public static readonly string[] ValueTypes = ["uint16", "int16", "uint32", "int32", "float32"];
+
+    public static int RegistersPerValue(string type) => type is "uint16" or "int16" ? 1 : 2;
+
+    public static bool IsByteOrder(string order) => Orders32.Any(o => o.Name == order);
+
+    /// <summary>One value of <paramref name="type" /> starting at <paramref name="offset" />, in the given byte order.</summary>
+    public static DriverValue DecodeOne(ReadOnlySpan<ushort> registers, int offset, string type, string byteOrder)
+    {
+        if (type == "uint16")
+            return DriverValue.FromUInt16(registers[offset]);
+        if (type == "int16")
+            return DriverValue.FromInt16((short)registers[offset]);
+
+        Span<byte> wire = stackalloc byte[4];
+        BinaryPrimitives.WriteUInt16BigEndian(wire, registers[offset]);
+        BinaryPrimitives.WriteUInt16BigEndian(wire[2..], registers[offset + 1]);
+        var map = Orders32.First(o => o.Name == byteOrder).Map;
+        Span<byte> value = stackalloc byte[4];
+        for (var b = 0; b < 4; b++)
+            value[b] = wire[map[b]];
+        return type switch
+        {
+            "uint32" => DriverValue.FromUInt32(BinaryPrimitives.ReadUInt32BigEndian(value)),
+            "int32" => DriverValue.FromInt32(BinaryPrimitives.ReadInt32BigEndian(value)),
+            _ => DriverValue.FromFloat32(BinaryPrimitives.ReadSingleBigEndian(value))
+        };
+    }
 
     public static List<DecodedValue> Decode(ReadOnlySpan<ushort> registers)
     {

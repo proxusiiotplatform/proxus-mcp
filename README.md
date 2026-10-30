@@ -8,6 +8,7 @@ Gives AI assistants such as Claude Desktop, Cursor and VS Code read-only access 
 |---|---|
 | `list_devices` | Configured devices, endpoint, ISA-95 path, connection state |
 | `read_address` | Raw registers or bits: `hr:0`, `ir:10`, `coil:5`, `di:0` or `40001` |
+| `watch_address` | Polls a Modbus address for 1–60 s and summarises how it moved, decoded as uint16, int16, uint32, int32 or float32 in any byte order |
 | `decode_registers` | Up to 16 registers read every common way: int16/32, uint, float32 in ABCD/CDAB/BADC/DCBA, float64 in both word orders |
 | `browse` | Children of an OPC UA node (default: Objects folder) |
 | `read_nodes` | Up to 50 OPC UA variables with data type, quality, status code and source timestamp |
