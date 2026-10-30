@@ -13,8 +13,8 @@
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.7" />
     </ItemGroup>
     <ItemGroup>
-        <!-- Local project references to the Apache-2.0 drivers (ADR 0043); NuGet packages once they are published. -->
-        <ProjectReference Include="../../../Proxus.Drivers/src/Proxus.Drivers.Modbus/Proxus.Drivers.Modbus.csproj" />
-        <ProjectReference Include="../../../Proxus.Drivers/src/Proxus.Drivers.OpcUa/Proxus.Drivers.OpcUa.csproj" />
+        <!-- The Apache-2.0 drivers from https://github.com/proxusiiotplatform/proxus-drivers -->
+        <PackageReference Include="Proxus.Drivers.Modbus" Version="0.1.0-preview.1" />
+        <PackageReference Include="Proxus.Drivers.OpcUa" Version="0.1.0-preview.1" />
     </ItemGroup>
 </Project>

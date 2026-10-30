@@ -39,7 +39,7 @@ carry the OPC UA StatusCode name, the specification's description and a suggeste
 
 ## Build
 
-Needs the .NET 10.0.302 SDK and `../Proxus.Drivers` next to this folder (project references to the Apache-2.0 drivers until they are on NuGet).
+Needs the .NET 10 SDK. The protocol drivers come from the [Proxus.Drivers](https://github.com/proxusiiotplatform/proxus-drivers) NuGet packages (Apache-2.0).
 
 ```bash
 dotnet publish src/Proxus.Mcp.Server -c Release -r osx-arm64 -o artifacts/osx-arm64
@@ -69,7 +69,7 @@ Copy `proxus-mcp.example.json` as a starting configuration.
 - `dotnet test tests/Proxus.Mcp.Tests`: unit tests, no devices needed.
 - `tests/smoke/run_all.sh`: the published binary against Modbus and OPC UA simulators (see `tests/smoke/README.md`).
 - CI (`.github/workflows/ci.yml`) runs both and publishes Native AOT binaries for linux-x64, linux-arm64, win-x64 and
-  osx-arm64. Until the drivers are on NuGet it checks out `Proxus.Drivers` with the `DRIVERS_TOKEN` secret.
+  osx-arm64.
 
 ## Licence
 

@@ -30,39 +30,17 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v4
-        with:
-          path: proxus-mcp
-      # The Apache-2.0 drivers (ADR 0043 in Proxus.Drivers) until they are on NuGet. The repository is private,
-      # so DRIVERS_TOKEN is a fine-grained token with read access to it. Pinned to a commit so a driver change
-      # never breaks this build unannounced; move the pin when the server needs newer drivers.
-      - uses: actions/checkout@v4
-        with:
-          repository: proxusiiotplatform/Proxus.Drivers
-          ref: 95ddb7ba0cb26a79dfbcf72572fa73f5753528cd
-          token: ${{ secrets.DRIVERS_TOKEN }}
-          path: Proxus.Drivers
-          sparse-checkout: |
-            global.json
-            Directory.Build.props
-            Directory.Build.targets
-            src/Proxus.Drivers.Abstractions
-            src/Proxus.Drivers.Core
-            src/Proxus.Drivers.Modbus
-            src/Proxus.Drivers.OpcUa
       - uses: actions/setup-dotnet@v4
         with:
-          global-json-file: proxus-mcp/global.json
+          global-json-file: global.json
 
       - name: Unit tests
-        working-directory: proxus-mcp
         run: dotnet test tests/Proxus.Mcp.Tests -c Release
 
       - name: Publish (Native AOT)
-        working-directory: proxus-mcp
         run: dotnet publish src/Proxus.Mcp.Server -c Release -r ${{ matrix.rid }} -o artifacts/${{ matrix.rid }} -warnaserror
 
       - name: Answers an MCP initialize over stdio
-        working-directory: proxus-mcp
         run: |
           echo '{"devices":{"m":{"protocol":"modbus-tcp","host":"127.0.0.1"}}}' > ci.json
           { echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}'; sleep 5; } \
@@ -77,9 +55,9 @@ jobs:
         with:
           name: proxus-mcp-${{ matrix.rid }}
           path: |
-            proxus-mcp/artifacts/${{ matrix.rid }}/${{ matrix.exe }}
-            proxus-mcp/README.md
-            proxus-mcp/proxus-mcp.example.json
+            artifacts/${{ matrix.rid }}/${{ matrix.exe }}
+            README.md
+            proxus-mcp.example.json
           retention-days: 3
 
   smoke:
@@ -88,33 +66,15 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-        with:
-          path: proxus-mcp
-      - uses: actions/checkout@v4
-        with:
-          repository: proxusiiotplatform/Proxus.Drivers
-          ref: 95ddb7ba0cb26a79dfbcf72572fa73f5753528cd
-          token: ${{ secrets.DRIVERS_TOKEN }}
-          path: Proxus.Drivers
-          sparse-checkout: |
-            global.json
-            Directory.Build.props
-            Directory.Build.targets
-            src/Proxus.Drivers.Abstractions
-            src/Proxus.Drivers.Core
-            src/Proxus.Drivers.Modbus
-            src/Proxus.Drivers.OpcUa
       - uses: actions/setup-dotnet@v4
         with:
-          global-json-file: proxus-mcp/global.json
+          global-json-file: global.json
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - name: Publish (Native AOT)
-        working-directory: proxus-mcp
         run: dotnet publish src/Proxus.Mcp.Server -c Release -r linux-x64 -o artifacts/linux-x64
       - name: Simulators
         run: python -m pip install --quiet pymodbus==3.12.0 asyncua==1.1.8
       - name: Smoke tests
-        working-directory: proxus-mcp
         run: tests/smoke/run_all.sh artifacts/linux-x64/proxus-mcp "$(command -v python)"
