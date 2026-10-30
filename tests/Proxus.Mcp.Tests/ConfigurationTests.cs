@@ -57,6 +57,21 @@ public sealed class ConfigurationTests : IDisposable
     }
 
     [Theory]
+    [InlineData("Basic256Sha256", "http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256")]
+    [InlineData("Aes128_Sha256_RsaOaep", "http://opcfoundation.org/UA/SecurityPolicy#Aes128_Sha256_RsaOaep")]
+    [InlineData("aes128_sha256_rsaoaep", "http://opcfoundation.org/UA/SecurityPolicy#Aes128_Sha256_RsaOaep")]
+    [InlineData("Aes256_Sha256_RsaPss", "http://opcfoundation.org/UA/SecurityPolicy#Aes256_Sha256_RsaPss")]
+    public void Every_supported_security_policy_maps_to_its_uri(string policy, string uri)
+    {
+        var device = Load($$"""
+            { "devices": { "p": { "protocol": "opc-ua", "endpoint": "opc.tcp://h:4840",
+                                  "security_mode": "sign", "security_policy": "{{policy}}" } } }
+            """).Devices["p"];
+
+        Assert.Equal(uri, device.SecurityPolicyUri);
+    }
+
+    [Theory]
     [InlineData("""{ "devices": { "x": { "protocol": "profinet", "host": "h" } } }""", "not supported")]
     [InlineData("""{ "devices": { "x": { "protocol": "modbus-tcp" } } }""", "host is required")]
     [InlineData("""{ "devices": { "x": { "protocol": "opc-ua", "endpoint": "http://h" } } }""", "opc.tcp://")]

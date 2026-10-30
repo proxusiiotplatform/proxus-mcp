@@ -41,8 +41,9 @@ export PROXUS_TEST_PW=secret PROXUS_TEST_WRONG_PW=nope
 out=$(python3 opcua_secure_smoke.py "$BIN" opcua_secure.json b256 strict)
 expect "$out" 'UA_SERVER_CERT_UNTRUSTED'
 mkdir -p pki-test/trusted && mv pki-test/rejected/*.der pki-test/trusted/
-out=$(python3 opcua_secure_smoke.py "$BIN" opcua_secure.json b256 b256-sign aes user bad-user not-offered strict)
-expect "$out" '== b256 isError=False' '== b256-sign isError=False' '== aes isError=False' '== user isError=False' \
+out=$(python3 opcua_secure_smoke.py "$BIN" opcua_secure.json b256 b256-sign aes aes128 aes128-sign user bad-user not-offered strict)
+expect "$out" '== b256 isError=False' '== b256-sign isError=False' '== aes isError=False' \
+  '== aes128 isError=False' '== aes128-sign isError=False' '== user isError=False' \
   'BadUserAccessDenied' 'It offers:' 'BadCertificateUntrusted'
 echo "ok  opcua security"
 

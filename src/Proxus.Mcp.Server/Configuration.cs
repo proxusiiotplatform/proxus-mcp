@@ -59,7 +59,7 @@ public sealed class DeviceConfiguration
     /// <summary>none, sign or sign_and_encrypt.</summary>
     public string SecurityMode { get; set; } = "none";
 
-    /// <summary>Basic256Sha256 or Aes256_Sha256_RsaPss; used when security_mode is not none.</summary>
+    /// <summary>Basic256Sha256, Aes128_Sha256_RsaOaep or Aes256_Sha256_RsaPss; used when security_mode is not none.</summary>
     public string SecurityPolicy { get; set; } = "Basic256Sha256";
 
     /// <summary>Require the server certificate to name the endpoint host. Turn off only for servers whose certificate
@@ -88,6 +88,7 @@ public sealed class DeviceConfiguration
     {
         // SecurityPolicy URIs from OPC 10000-7; the driver keeps its own constants internal.
         "basic256sha256" => "http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256",
+        "aes128_sha256_rsaoaep" => "http://opcfoundation.org/UA/SecurityPolicy#Aes128_Sha256_RsaOaep",
         "aes256_sha256_rsapss" => "http://opcfoundation.org/UA/SecurityPolicy#Aes256_Sha256_RsaPss",
         _ => null
     };
@@ -117,7 +118,7 @@ public sealed class DeviceConfiguration
             if (SecurityMode.ToLowerInvariant() is not ("none" or "sign" or "sign_and_encrypt"))
                 throw new InvalidDataException($"Device '{name}': security_mode must be none, sign or sign_and_encrypt.");
             if (!IsUnsecured && SecurityPolicyUri is null)
-                throw new InvalidDataException($"Device '{name}': security_policy must be Basic256Sha256 or Aes256_Sha256_RsaPss.");
+                throw new InvalidDataException($"Device '{name}': security_policy must be Basic256Sha256, Aes128_Sha256_RsaOaep or Aes256_Sha256_RsaPss.");
             return;
         }
 

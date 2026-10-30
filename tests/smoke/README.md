@@ -32,12 +32,12 @@ certificates in `<work-dir>/trusted-clients` (it reads that folder at start).
 export PROXUS_TEST_PW=secret PROXUS_TEST_WRONG_PW=nope
 python3 opcua_secure_smoke.py ../../artifacts/osx-arm64/proxus-mcp opcua_secure.json b256 strict     # both: UA_SERVER_CERT_UNTRUSTED
 mv pki-test/rejected/*.der pki-test/trusted/                                                         # the operator's approval
-python3 opcua_secure_smoke.py ../../artifacts/osx-arm64/proxus-mcp opcua_secure.json b256 b256-sign aes user bad-user not-offered strict
+python3 opcua_secure_smoke.py ../../artifacts/osx-arm64/proxus-mcp opcua_secure.json b256 b256-sign aes aes128 aes128-sign user bad-user not-offered strict
 cp pki-test/own/cert.der /tmp/ua-strict/trusted-clients/ && restart the strict server                # the server's approval
 python3 opcua_secure_smoke.py ../../artifacts/osx-arm64/proxus-mcp opcua_secure.json strict
 ```
 
-Expected in the second run: b256, b256-sign, aes and user read 72.5; bad-user fails with BadUserAccessDenied;
+Expected in the second run: b256, b256-sign, aes, aes128, aes128-sign and user read 72.5; bad-user fails with BadUserAccessDenied;
 not-offered lists the offered endpoints; strict fails with BadCertificateUntrusted and names this client's certificate.
 
 ## diagnose_connection

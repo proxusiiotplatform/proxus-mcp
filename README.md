@@ -1,6 +1,6 @@
 # Proxus Industrial MCP Server
 
-Gives AI assistants such as Claude Desktop, Cursor and VS Code read-only access to industrial devices. Supports Modbus TCP and OPC UA (Basic256Sha256 or Aes256_Sha256_RsaPss with Sign or SignAndEncrypt, or unsecured; anonymous or user-name login).
+Gives AI assistants such as Claude Desktop, Cursor and VS Code read-only access to industrial devices. Supports Modbus TCP and OPC UA (Basic256Sha256, Aes128_Sha256_RsaOaep or Aes256_Sha256_RsaPss with Sign or SignAndEncrypt, or unsecured; anonymous or user-name login).
 
 ![An AI assistant reads a PLC, decodes a meter value and diagnoses a device that does not answer](docs/demo.svg)
 
@@ -23,8 +23,8 @@ Nothing can write to a device.
 
 ## OPC UA security
 
-Set `security_mode` (`sign_and_encrypt`, `sign` or `none`) and `security_policy` (`Basic256Sha256` or
-`Aes256_Sha256_RsaPss`) per device. Certificates live in `pki_dir` (default `pki/` next to the configuration file),
+Set `security_mode` (`sign_and_encrypt`, `sign` or `none`) and `security_policy` (`Basic256Sha256`,
+`Aes128_Sha256_RsaOaep` or `Aes256_Sha256_RsaPss`) per device. Certificates live in `pki_dir` (default `pki/` next to the configuration file),
 in the layout most OPC UA tools use:
 
 | Folder | Holds |

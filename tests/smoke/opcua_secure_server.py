@@ -2,7 +2,8 @@
 
 Usage: opcua_secure_server.py <port> <work-dir> [strict]
 - Generates its own certificate in <work-dir> on first run (SAN: urn:proxus:test:server, localhost, 127.0.0.1).
-- Endpoints: Basic256Sha256 Sign/SignAndEncrypt and Aes256_Sha256_RsaPss SignAndEncrypt; logins anonymous or op/secret.
+- Endpoints: Basic256Sha256 Sign/SignAndEncrypt, Aes128_Sha256_RsaOaep Sign/SignAndEncrypt and Aes256_Sha256_RsaPss
+  SignAndEncrypt; logins anonymous or op/secret.
 - strict: only clients whose certificate is in <work-dir>/trusted-clients are accepted (BadSecurityChecksFailed otherwise).
 """
 import asyncio, datetime, ipaddress, sys
@@ -60,6 +61,7 @@ async def main():
     await s.set_application_uri(URI)
     await s.load_certificate(str(cert_path)); await s.load_private_key(str(key_path))
     s.set_security_policy([ua.SecurityPolicyType.Basic256Sha256_SignAndEncrypt, ua.SecurityPolicyType.Basic256Sha256_Sign,
+                           ua.SecurityPolicyType.Aes128Sha256RsaOaep_SignAndEncrypt, ua.SecurityPolicyType.Aes128Sha256RsaOaep_Sign,
                            ua.SecurityPolicyType.Aes256Sha256RsaPss_SignAndEncrypt], permission_ruleset=SimpleRoleRuleset())
     if strict:
         trusted = work / "trusted-clients"; trusted.mkdir(exist_ok=True)
