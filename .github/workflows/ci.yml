@@ -33,10 +33,12 @@ jobs:
         with:
           path: proxus-mcp
       # The Apache-2.0 drivers (ADR 0043 in Proxus.Drivers) until they are on NuGet. The repository is private,
-      # so DRIVERS_TOKEN is a fine-grained token with read access to it.
+      # so DRIVERS_TOKEN is a fine-grained token with read access to it. Pinned to a commit so a driver change
+      # never breaks this build unannounced; move the pin when the server needs newer drivers.
       - uses: actions/checkout@v4
         with:
           repository: proxusiiotplatform/Proxus.Drivers
+          ref: 95ddb7ba0cb26a79dfbcf72572fa73f5753528cd
           token: ${{ secrets.DRIVERS_TOKEN }}
           path: Proxus.Drivers
           sparse-checkout: |
