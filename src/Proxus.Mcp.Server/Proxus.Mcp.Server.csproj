@@ -16,7 +16,7 @@
     </ItemGroup>
     <ItemGroup>
         <!-- The Apache-2.0 drivers from https://github.com/proxusiiotplatform/proxus-drivers -->
-        <PackageReference Include="Proxus.Drivers.Modbus" Version="0.1.0-preview.1" />
-        <PackageReference Include="Proxus.Drivers.OpcUa" Version="0.1.0-preview.1" />
+        <PackageReference Include="Proxus.Drivers.Modbus" Version="0.1.0-preview.2" />
+        <PackageReference Include="Proxus.Drivers.OpcUa" Version="0.1.0-preview.2" />
     </ItemGroup>
 </Project>

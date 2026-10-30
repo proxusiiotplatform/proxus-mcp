@@ -14,6 +14,7 @@ public sealed class OpcUaTools(DeviceSessions sessions)
     private const int MaxWatchedNodes = 20;
     private const int MaxReferences = 200;
     private const string ObjectsFolder = "i=85";
+    private static readonly IndustrialNodeId NamespaceArray = IndustrialNodeId.Numeric(0, 2255);
 
     [McpServerTool(Name = "browse", ReadOnly = true, Idempotent = true, OpenWorld = true)]
     [Description("Lists the children of a node on an OPC UA device: node id, browse name, display name, node class and type. Start without node_id (the Objects folder) and walk down; Variable nodes can then be read with read_nodes.")]
@@ -24,7 +25,7 @@ public sealed class OpcUaTools(DeviceSessions sessions)
         CancellationToken cancellationToken = default)
     {
         var text = string.IsNullOrWhiteSpace(nodeId) ? ObjectsFolder : nodeId;
-        if (!NodeIdText.TryParse(text, out var parsed, out var parseError))
+        if (!TryParseAll([text], out var unresolved, out var parseError))
             return Fail(BrowseResult.Failed(device, text, Invalid(parseError!)));
         if (max is < 1 or > MaxReferences)
             return Fail(BrowseResult.Failed(device, text, Invalid($"max must be between 1 and {MaxReferences}.")));
@@ -32,6 +33,10 @@ public sealed class OpcUaTools(DeviceSessions sessions)
         var session = await sessions.GetOpcUaAsync(device, cancellationToken).ConfigureAwait(false);
         if (!session.IsSuccess)
             return Fail(BrowseResult.Failed(device, text, session.Error));
+        var resolved = await ResolveAsync(session.Value, unresolved, cancellationToken).ConfigureAwait(false);
+        if (!resolved.IsSuccess)
+            return Fail(BrowseResult.Failed(device, text, resolved.Error));
+        var parsed = resolved.Value[0];
 
         var browse = await session.Value.BrowseAsync(
             new OpcUaBrowseDescription(parsed, NodeClassMask: OpcUaNodeClass.Object | OpcUaNodeClass.Variable | OpcUaNodeClass.Method),
@@ -60,23 +65,22 @@ public sealed class OpcUaTools(DeviceSessions sessions)
     [Description("Reads the current value of up to 50 OPC UA Variable nodes in one request. Returns each value with its data type, quality (Good, Uncertain, Bad), the OPC UA status code and the source timestamp. Find node ids with browse.")]
     public async Task<CallToolResult> ReadNodes(
         [Description("Device name from list_devices.")] string device,
-        [Description("NodeIds to read, e.g. [\"ns=2;s=Line1.Temperature\", \"i=2258\"].")] string[] nodeIds,
+        [Description("NodeIds to read, e.g. [\"ns=2;s=Line1.Temperature\", \"i=2258\", \"nsu=urn:example:plant;s=Line1.Speed\"].")] string[] nodeIds,
         CancellationToken cancellationToken = default)
     {
         if (nodeIds is null || nodeIds.Length is 0 or > MaxNodes)
             return Fail(ReadNodesResult.Failed(device, Invalid($"node_ids must hold between 1 and {MaxNodes} NodeIds.")));
 
-        var descriptors = new OpcUaNodeDescriptor[nodeIds.Length];
-        for (var i = 0; i < nodeIds.Length; i++)
-        {
-            if (!NodeIdText.TryParse(nodeIds[i], out var parsed, out var parseError))
-                return Fail(ReadNodesResult.Failed(device, Invalid(parseError!)));
-            descriptors[i] = new OpcUaNodeDescriptor(parsed);
-        }
+        if (!TryParseAll(nodeIds, out var unresolved, out var parseError))
+            return Fail(ReadNodesResult.Failed(device, Invalid(parseError!)));
 
         var session = await sessions.GetOpcUaAsync(device, cancellationToken).ConfigureAwait(false);
         if (!session.IsSuccess)
             return Fail(ReadNodesResult.Failed(device, session.Error));
+        var resolved = await ResolveAsync(session.Value, unresolved, cancellationToken).ConfigureAwait(false);
+        if (!resolved.IsSuccess)
+            return Fail(ReadNodesResult.Failed(device, resolved.Error));
+        var descriptors = resolved.Value.Select(static id => new OpcUaNodeDescriptor(id)).ToArray();
 
         var samples = new DriverSample[descriptors.Length];
         var read = await session.Value.ReadAsync(descriptors, samples, cancellationToken).ConfigureAwait(false);
@@ -90,7 +94,7 @@ public sealed class OpcUaTools(DeviceSessions sessions)
             var good = sample.Quality.Level != DriverQualityLevel.Bad;
             values.Add(new NodeValue(
                 descriptors[i].NodeId.ToString(),
-                good ? sample.Value.ToInvariantString() : null,
+                good ? ValueText(sample.Value) : null,
                 good ? sample.Value.Type.ToString() : null,
                 sample.Quality.Level.ToString(),
                 $"0x{sample.Quality.NativeStatusCode:X8}",
@@ -117,19 +121,20 @@ public sealed class OpcUaTools(DeviceSessions sessions)
         if (samplingIntervalMs is < 100 or > 10_000)
             return Fail(WatchResult.Failed(device, Invalid("samplingIntervalMs must be between 100 and 10000.")));
 
-        var items = new OpcUaMonitoredItemRequest[nodeIds.Length];
-        for (var i = 0; i < nodeIds.Length; i++)
-        {
-            if (!NodeIdText.TryParse(nodeIds[i], out var parsed, out var parseError))
-                return Fail(WatchResult.Failed(device, Invalid(parseError!)));
-            items[i] = new OpcUaMonitoredItemRequest(new OpcUaNodeDescriptor(parsed), WatchCollector.HandleFor(i),
-                SamplingInterval: samplingIntervalMs, QueueSize: 10);
-        }
+        if (!TryParseAll(nodeIds, out var unresolved, out var parseError))
+            return Fail(WatchResult.Failed(device, Invalid(parseError!)));
 
         var session = await sessions.GetOpcUaAsync(device, cancellationToken).ConfigureAwait(false);
         if (!session.IsSuccess)
             return Fail(WatchResult.Failed(device, session.Error));
         var client = session.Value;
+        var resolved = await ResolveAsync(client, unresolved, cancellationToken).ConfigureAwait(false);
+        if (!resolved.IsSuccess)
+            return Fail(WatchResult.Failed(device, resolved.Error));
+        var items = new OpcUaMonitoredItemRequest[resolved.Value.Length];
+        for (var i = 0; i < items.Length; i++)
+            items[i] = new OpcUaMonitoredItemRequest(new OpcUaNodeDescriptor(resolved.Value[i]), WatchCollector.HandleFor(i),
+                SamplingInterval: samplingIntervalMs, QueueSize: 10);
 
         // Publish at least once a second, and send keep-alives often enough that the loop below notices the deadline.
         var publishingInterval = Math.Min(samplingIntervalMs, 1000);
@@ -175,6 +180,75 @@ public sealed class OpcUaTools(DeviceSessions sessions)
         return ToolOutput.Ok(
             new WatchResult(device, started, Math.Round((DateTimeOffset.UtcNow - started).TotalSeconds, 1), samplingIntervalMs, collector.Results(), null),
             Json.WatchResult);
+    }
+
+    private const int MaxArrayElementsShown = 50;
+
+    /// <summary>Arrays show their elements (the driver's own text is only a type and length summary).</summary>
+    public static string ValueText(DriverValue value)
+    {
+        if (value.Type != IndustrialDataType.Array)
+            return value.ToInvariantString();
+
+        var elements = value.AsArray().Values.Span;
+        var shown = new List<string>(Math.Min(elements.Length, MaxArrayElementsShown));
+        for (var i = 0; i < elements.Length && i < MaxArrayElementsShown; i++)
+            shown.Add(ValueText(elements[i]));
+        var more = elements.Length > MaxArrayElementsShown ? $", … {elements.Length - MaxArrayElementsShown} more" : string.Empty;
+        return $"[{string.Join(", ", shown)}{more}]";
+    }
+
+    private static bool TryParseAll(string[] texts, out (IndustrialNodeId Id, string? NamespaceUri)[] parsed, out string? error)
+    {
+        parsed = new (IndustrialNodeId, string?)[texts.Length];
+        for (var i = 0; i < texts.Length; i++)
+        {
+            if (!NodeIdText.TryParse(texts[i], out var id, out var uri, out error))
+                return false;
+            parsed[i] = (id, uri);
+        }
+
+        error = null;
+        return true;
+    }
+
+    /// <summary>Puts in the namespace index for every nsu= NodeId, from the server's NamespaceArray (i=2255).</summary>
+    private static async ValueTask<DriverResult<IndustrialNodeId[]>> ResolveAsync(
+        OpcUaTcpClient client,
+        (IndustrialNodeId Id, string? NamespaceUri)[] parsed,
+        CancellationToken cancellationToken)
+    {
+        if (parsed.All(static p => p.NamespaceUri is null))
+            return DriverResult<IndustrialNodeId[]>.Success(parsed.Select(static p => p.Id).ToArray());
+
+        var read = await client.ReadAsync(new OpcUaNodeDescriptor(NamespaceArray), cancellationToken).ConfigureAwait(false);
+        if (!read.IsSuccess)
+            return DriverResult<IndustrialNodeId[]>.Failure(read.Error);
+        if (read.Value.Value.Type != IndustrialDataType.Array)
+            return DriverResult<IndustrialNodeId[]>.Failure(Invalid("The server did not return its namespace table (i=2255), so nsu= NodeIds cannot be resolved; use ns=."));
+
+        var namespaces = read.Value.Value.AsArray().Values.ToArray().Select(static v => v.ToInvariantString()).ToArray();
+        var resolved = new IndustrialNodeId[parsed.Length];
+        for (var i = 0; i < parsed.Length; i++)
+        {
+            var (id, uri) = parsed[i];
+            if (uri is null)
+            {
+                resolved[i] = id;
+                continue;
+            }
+
+            var index = Array.IndexOf(namespaces, uri);
+            if (index < 0)
+            {
+                return DriverResult<IndustrialNodeId[]>.Failure(Invalid(
+                    $"Namespace URI '{uri}' is not on this server. Its namespaces: {string.Join(", ", namespaces.Select(static (n, i) => $"{i}={n}"))}."));
+            }
+
+            resolved[i] = NodeIdText.WithNamespace(id, (ushort)index);
+        }
+
+        return DriverResult<IndustrialNodeId[]>.Success(resolved);
     }
 
     private static ToolJsonContext Json => ToolJsonContext.Readable;

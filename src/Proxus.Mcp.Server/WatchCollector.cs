@@ -54,7 +54,7 @@ public sealed class WatchCollector
         public void Add(DriverSample sample)
         {
             var good = sample.Quality.Level != DriverQualityLevel.Bad;
-            var text = good ? sample.Value.ToInvariantString() : null;
+            var text = good ? OpcUaTools.ValueText(sample.Value) : null;
             _count++;
             _first ??= text;
             _last = text;
