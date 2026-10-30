@@ -6,3 +6,5 @@ pki/
 pki-test/
 .venv/
 pki-diagnose/
+dist/
+dl/

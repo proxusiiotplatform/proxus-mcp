@@ -48,6 +48,17 @@ choose "More info, Run anyway" the first time.
 
 `proxus-mcp --version` prints the version.
 
+### Docker
+
+```bash
+docker run -i --rm -v "$PWD:/config" ghcr.io/proxusiiotplatform/proxus-mcp:<version>
+```
+
+The image reads `/config/proxus-mcp.json` and speaks MCP over stdin/stdout, so an MCP client starts it with
+`docker` as the command and `run -i --rm -v <folder>:/config ghcr.io/proxusiiotplatform/proxus-mcp:<version>` as the
+arguments. Devices on the host are reachable as `host.docker.internal`; on Linux add `--network host` to reach the
+plant network directly. Images are published for linux/amd64 and linux/arm64.
+
 ## Build
 
 Needs the .NET 10 SDK. The protocol drivers come from the [Proxus.Drivers](https://github.com/proxusiiotplatform/proxus-drivers) NuGet packages (Apache-2.0).
