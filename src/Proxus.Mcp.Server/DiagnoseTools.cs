@@ -169,6 +169,8 @@ public sealed class DiagnoseTools(DeviceSessions sessions, PkiStore pki)
         }
 
         steps.Add(SecurityStep(settings, options.Value, offered));
+        if (steps[^1].Status == "failed")
+            return Skip(steps, "session", "server_status");
 
         watch.Restart();
         await using var client = new OpcUaTcpClient(options.Value);
@@ -217,6 +219,9 @@ public sealed class DiagnoseTools(DeviceSessions sessions, PkiStore pki)
         }
 
         var server = options.EndpointServerCertificate!;
+        if (settings.CheckHostName && HostNameMismatch(server, new Uri(settings.Endpoint!)) is { } mismatch)
+            return mismatch;
+
         var (own, applicationUri) = pki.GetOrCreateApplicationCertificate();
         var expiresSoon = new[] { server, own }.Where(static c => c.NotAfter.ToUniversalTime() < DateTime.UtcNow.AddDays(30)).ToArray();
         var detail = $"{settings.SecurityPolicy}/{settings.SecurityMode}. Server certificate '{server.GetNameInfo(X509NameType.SimpleName, false)}' " +
@@ -225,6 +230,29 @@ public sealed class DiagnoseTools(DeviceSessions sessions, PkiStore pki)
             ? Step.Warning("security", 0, detail + $" A certificate expires within 30 days: {string.Join(", ", expiresSoon.Select(static c => c.Subject))}.",
                 "Renew it before it expires, or the connection will stop.")
             : Step.Ok("security", 0, detail);
+    }
+
+    /// <summary>
+    ///     The check the driver makes when it connects, made here first so the report names the security layer and
+    ///     the names the certificate does carry.
+    /// </summary>
+    private static Step? HostNameMismatch(X509Certificate2 certificate, Uri endpoint)
+    {
+        var names = certificate.Extensions.OfType<X509SubjectAlternativeNameExtension>()
+            .SelectMany(static e => e.EnumerateDnsNames().Concat(e.EnumerateIPAddresses().Select(static a => a.ToString())))
+            .ToArray();
+        var host = endpoint.Host;
+        var matches = names.Any(name =>
+            string.Equals(name, host, StringComparison.OrdinalIgnoreCase) ||
+            (name.StartsWith("*.", StringComparison.Ordinal) && host.EndsWith(name[1..], StringComparison.OrdinalIgnoreCase)) ||
+            (IPAddress.TryParse(name, out var a) && IPAddress.TryParse(host, out var b) && a.Equals(b)));
+        if (matches || names.Length == 0)
+            return null;
+
+        var suggestion = names.FirstOrDefault(static n => !IPAddress.TryParse(n, out _)) ?? names[0];
+        return Step.Failed("security", 0,
+            $"The server certificate names {string.Join(", ", names)}, but the endpoint uses '{host}', so the secure connection would be refused.",
+            $"Use opc.tcp://{suggestion}:{endpoint.Port}{endpoint.AbsolutePath} as the endpoint, or set check_host_name to false for this device if '{host}' is the right address.");
     }
 
     private static Step ServerStatusStep(DriverSample[] samples, long elapsed)
