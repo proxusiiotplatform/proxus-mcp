@@ -99,12 +99,13 @@ public sealed class ToolTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task Closed_port_is_a_transport_error_with_a_next_step()
+    public async Task Closed_port_is_a_connection_error_with_a_next_step()
     {
         var (isError, json) = Parse(await new ModbusTools(_sessions).ReadAddress("meter", "hr:0"));
 
         Assert.True(isError);
-        Assert.Equal("Transport", json.GetProperty("error").GetProperty("kind").GetString());
+        // Linux and macOS refuse a closed port at once; Windows retries the SYN and runs into the timeout first.
+        Assert.Contains(json.GetProperty("error").GetProperty("kind").GetString(), new[] { "Transport", "Timeout" });
         Assert.False(string.IsNullOrEmpty(json.GetProperty("error").GetProperty("suggestedAction").GetString()));
     }
 
