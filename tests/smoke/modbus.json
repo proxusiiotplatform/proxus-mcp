@@ -1,7 +1,8 @@
 {
   // M0 test devices
+  "maps_dir": "maps",
   "devices": {
-    "meter-1": { "protocol": "modbus-tcp", "host": "127.0.0.1", "port": 15020, "unit_id": 1, "path": "Demo/Plant/Energy/Meter1" },
+    "meter-1": { "protocol": "modbus-tcp", "host": "127.0.0.1", "port": 15020, "unit_id": 1, "path": "Demo/Plant/Energy/Meter1", "map": "test/sim-meter" },
     "offline-plc": { "protocol": "modbus-tcp", "host": "127.0.0.1", "port": 15999, "timeout_ms": 1000 }
   }
 }

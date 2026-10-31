@@ -1,6 +1,8 @@
 {
   // OPC UA certificates: own/, trusted/, rejected/. Relative to this file.
   "pki_dir": "pki",
+  // Optional folder of extra register maps (JSON). Relative to this file.
+  // "maps_dir": "maps",
   // Every device the server may reach. Nothing outside this file is reachable.
   "devices": {
     "meter-1": {
@@ -10,6 +12,8 @@
       "unit_id": 1,
       "path": "Acme/Gebze/Energy/Meter1",
       "timeout_ms": 3000
+      // Optional register map for read_named: a map id (find_device_map) or the path of a map's JSON file.
+      // "map": "eastron/sdm630-modbus"
     },
     "press-3": {
       "protocol": "opc-ua",

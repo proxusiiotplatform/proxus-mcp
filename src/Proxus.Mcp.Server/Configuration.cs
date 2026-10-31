@@ -15,6 +15,14 @@ public sealed class ServerConfiguration
     /// <summary>OPC UA certificate folders (own, trusted, rejected). Relative paths start at the configuration file.</summary>
     public string PkiDir { get; set; } = "pki";
 
+    /// <summary>Extra register maps (JSON, from tools/maps.py build) that add to or replace the built-in ones.
+    /// Relative paths start at the configuration file.</summary>
+    public string? MapsDir { get; set; }
+
+    /// <summary>Built-in maps plus maps_dir, with every device's map resolved. Filled by <see cref="Load" />.</summary>
+    [JsonIgnore]
+    public DeviceMapLibrary Maps { get; private set; } = new();
+
     public static ServerConfiguration Load(string path)
     {
         if (!File.Exists(path))
@@ -27,7 +35,13 @@ public sealed class ServerConfiguration
         foreach (var (name, device) in configuration.Devices)
             device.Validate(name);
 
-        configuration.PkiDir = Path.GetFullPath(configuration.PkiDir, Path.GetDirectoryName(Path.GetFullPath(path))!);
+        var directory = Path.GetDirectoryName(Path.GetFullPath(path))!;
+        configuration.PkiDir = Path.GetFullPath(configuration.PkiDir, directory);
+        if (configuration.MapsDir is not null)
+            configuration.MapsDir = Path.GetFullPath(configuration.MapsDir, directory);
+        configuration.Maps = DeviceMapLibrary.Load(configuration.MapsDir);
+        foreach (var (name, device) in configuration.Devices)
+            device.ResolveMap(name, configuration.Maps, directory);
 
         return configuration;
     }
@@ -50,6 +64,13 @@ public sealed class DeviceConfiguration
     public string Host { get; set; } = string.Empty;
     public int Port { get; set; } = 502;
     public byte UnitId { get; set; } = 1;
+
+    /// <summary>Register map for read_named: a map id such as eastron/sdm630-modbus, or a path to a map's JSON file.</summary>
+    public string? Map { get; set; }
+
+    /// <summary>The map <see cref="Map" /> names, once the configuration is loaded.</summary>
+    [JsonIgnore]
+    public DeviceMap? ResolvedMap { get; private set; }
 
     // OPC UA
     /// <summary>opc.tcp:// endpoint URL. The connection always goes to this host and port, even when the server
@@ -123,6 +144,28 @@ public sealed class DeviceConfiguration
         }
 
         throw new InvalidDataException($"Device '{name}': protocol '{Protocol}' is not supported. Use '{ModbusTcp}' or '{OpcUa}'.");
+    }
+
+    internal void ResolveMap(string name, DeviceMapLibrary library, string configDirectory)
+    {
+        if (string.IsNullOrWhiteSpace(Map))
+            return;
+        if (!IsModbus)
+            throw new InvalidDataException($"Device '{name}': map applies to Modbus devices only.");
+
+        if (Map.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+        {
+            var file = System.IO.Path.GetFullPath(Map, configDirectory);
+            if (!File.Exists(file))
+                throw new InvalidDataException($"Device '{name}': map file not found: {file}");
+            ResolvedMap = DeviceMapLibrary.ReadFile(file);
+            library.Add(ResolvedMap);
+            return;
+        }
+
+        ResolvedMap = library.Find(Map)
+                      ?? throw new InvalidDataException(
+                          $"Device '{name}': no register map '{Map}'. {(library.Count == 0 ? "No maps are loaded; set maps_dir or give the path of a map's JSON file." : "Use find_device_map to look up the id.")}");
     }
 }
 

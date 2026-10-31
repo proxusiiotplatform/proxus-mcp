@@ -18,6 +18,8 @@ python3 opcua_smoke.py ../../artifacts/osx-arm64/proxus-mcp opcua.json
 ```
 
 `modbus_server.py` stores 230.5 as a word-swapped float (CDAB) in hr:0-1, so `decode_registers` must show 230.5 under CDAB.
+`maps/test/sim-meter.json` maps those registers, so `read_named` must return 230.5 V, 123.4 kWh (scale 0.1),
+0.01234 kWh (scale factor -5 from hr:3) and the label of ir:0.
 `opcua_server.py` publishes a string that looks like an instruction (Line1.Operator); it must come back as plain data.
 
 ## OPC UA security

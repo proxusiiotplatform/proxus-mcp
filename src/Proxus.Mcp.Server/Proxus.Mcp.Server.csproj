@@ -15,6 +15,12 @@
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.7" />
     </ItemGroup>
     <ItemGroup>
+        <!-- Register maps from https://github.com/proxusiiotplatform/modbus-register-maps, bundled by
+             tools/bundle_maps.py. Without the file the server still loads maps from maps_dir. -->
+        <EmbeddedResource Include="maps/register-maps.json.gz" LogicalName="Proxus.Mcp.register-maps.json.gz"
+                          Condition="Exists('maps/register-maps.json.gz')" />
+    </ItemGroup>
+    <ItemGroup>
         <!-- The Apache-2.0 drivers from https://github.com/proxusiiotplatform/proxus-drivers -->
         <PackageReference Include="Proxus.Drivers.Modbus" Version="0.1.0-preview.4" />
         <PackageReference Include="Proxus.Drivers.OpcUa" Version="0.1.0-preview.4" />

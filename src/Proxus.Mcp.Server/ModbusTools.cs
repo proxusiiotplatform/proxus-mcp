@@ -11,7 +11,7 @@ namespace Proxus.Mcp;
 public sealed class DeviceTools(DeviceSessions sessions)
 {
     [McpServerTool(Name = "list_devices", ReadOnly = true, Idempotent = true, OpenWorld = false)]
-    [Description("Lists the industrial devices this server is configured to reach, with protocol, endpoint, ISA-95 path and whether a connection is open. Call this first; other tools take a device name from this list. Modbus devices use read_address and decode_registers; OPC UA devices use browse and read_nodes.")]
+    [Description("Lists the industrial devices this server is configured to reach, with protocol, endpoint, ISA-95 path and whether a connection is open. Call this first; other tools take a device name from this list. Modbus devices use read_address and decode_registers, or read_named when the device has a register map; OPC UA devices use browse and read_nodes.")]
     public CallToolResult ListDevices()
     {
         var devices = sessions.Configuration.Devices
@@ -20,7 +20,8 @@ public sealed class DeviceTools(DeviceSessions sessions)
                 pair.Value.Protocol,
                 pair.Value.DisplayEndpoint,
                 pair.Value.Path,
-                sessions.IsConnected(pair.Key)))
+                sessions.IsConnected(pair.Key),
+                pair.Value.ResolvedMap?.Id))
             .ToList();
         return ToolOutput.Ok(devices, ToolJsonContext.Readable.ListDeviceSummary);
     }
@@ -240,7 +241,7 @@ public sealed class ModbusTools(DeviceSessions sessions)
     }
 }
 
-public sealed record DeviceSummary(string Name, string Protocol, string Endpoint, string? Path, bool Connected);
+public sealed record DeviceSummary(string Name, string Protocol, string Endpoint, string? Path, bool Connected, string? Map);
 
 /// <summary>A driver error as the model should see it: what failed, why, and what to try next.</summary>
 public sealed record ToolError(string Code, string Kind, string Message, string? Cause, string? SuggestedAction)

@@ -1,0 +1,19 @@
+{
+  "id": "test/sim-meter",
+  "vendor": "Test",
+  "model": "Simulated meter",
+  "aliases": ["SIM-1"],
+  "category": "energy-meter",
+  "summary": "Register map of modbus_server.py, for the smoke tests.",
+  "connection": { "interfaces": ["tcp"], "default_byte_order": "CDAB", "notes": ["Simulator only."] },
+  "sources": [{ "title": "modbus_server.py", "publisher": "proxus-mcp tests", "url": "https://github.com/proxusiiotplatform/proxus-mcp" }],
+  "registers": [
+    { "key": "voltage", "name": "Voltage", "group": "voltage", "table": "holding", "address": 0, "type": "float32", "unit": "V", "access": "r" },
+    { "key": "energy", "name": "Energy", "group": "energy", "table": "holding", "address": 2, "type": "uint16", "unit": "kWh", "scale": 0.1, "access": "r" },
+    { "key": "energy_sf", "name": "Energy scaled by a SunSpec scale factor", "group": "energy", "table": "holding", "address": 2, "type": "uint16", "scale_factor": "sf", "unit": "kWh", "access": "r" },
+    { "key": "sf", "name": "Scale factor", "group": "energy", "table": "holding", "address": 3, "type": "int16", "access": "r" },
+    { "key": "state", "name": "State", "group": "status", "table": "input", "address": 0, "type": "uint16", "access": "r", "values": { "42": "Running" } },
+    { "key": "relay", "name": "Relay", "group": "status", "table": "coil", "address": 0, "type": "bool", "access": "r" },
+    { "key": "reset", "name": "Reset", "group": "status", "table": "holding", "address": 10, "type": "uint16", "access": "w" }
+  ]
+}

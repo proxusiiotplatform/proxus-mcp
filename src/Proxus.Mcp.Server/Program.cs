@@ -62,6 +62,7 @@ builder.Services
     .WithStdioServerTransport()
     .WithTools<DeviceTools>()
     .WithTools<ModbusTools>()
+    .WithTools<MapTools>()
     .WithTools<OpcUaTools>()
     .WithTools<DiagnoseTools>();
 

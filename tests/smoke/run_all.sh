@@ -29,7 +29,9 @@ expect() { # expect <output> <text>...
 
 out=$(python3 modbus_smoke.py "$BIN" modbus.json)
 expect "$out" '"value":"230.5"' 'count must be between 1 and 125' 'UNKNOWN_DEVICE' 'MODBUS_CONNECT' \
-  '"changeCount":1,"first":"230.5"' '"failedReads":0'
+  '"changeCount":1,"first":"230.5"' '"failedReads":0' \
+  '"id":"test/sim-meter"' '"matching":3' '"key":"voltage","name":"Voltage","address":"hr:0","type":"float32","value":"230.5"' \
+  '"value":"123.4","unit":"kWh"' '"value":"0.01234"' '"label":"Running"' '"value":"true"' 'write-only' 'Unknown keys: nope'
 echo "ok  modbus"
 
 out=$(python3 opcua_smoke.py "$BIN" opcua.json)

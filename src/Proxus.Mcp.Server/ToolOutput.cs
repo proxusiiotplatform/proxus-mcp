@@ -40,6 +40,9 @@ internal static class ToolOutput
 [JsonSerializable(typeof(ReadNodesResult))]
 [JsonSerializable(typeof(DiagnoseResult))]
 [JsonSerializable(typeof(WatchResult))]
+[JsonSerializable(typeof(MapSearchResult))]
+[JsonSerializable(typeof(DeviceMapView))]
+[JsonSerializable(typeof(NamedReadResult))]
 internal sealed partial class ToolJsonContext : JsonSerializerContext
 {
     /// <summary>Unescaped output: device names and units such as °C stay readable for the model.</summary>

@@ -17,7 +17,7 @@ for t in tools: print("TOOL", t["name"], t.get("annotations"), list(t["inputSche
 def tool(i, name, args):
     r = call(i, "tools/call", {"name": name, "arguments": args})["result"]
     print(f"\n== {name} {args} isError={r.get('isError')}")
-    print(r["content"][0]["text"][:900])
+    print(r["content"][0]["text"][:3000])
 tool(3, "list_devices", {})
 tool(4, "read_address", {"device": "meter-1", "address": "hr:0", "count": 4})
 tool(5, "read_address", {"device": "meter-1", "address": "coil:0", "count": 4})
@@ -28,5 +28,9 @@ tool(9, "read_address", {"device": "nope", "address": "hr:0"})
 tool(10, "read_address", {"device": "meter-1", "address": "zz:1"})
 tool(11, "read_address", {"device": "meter-1", "address": "hr:0", "count": 500})
 tool(12, "list_devices", {})
+tool(14, "find_device_map", {"query": "sim-1"})
+tool(15, "get_device_map", {"mapOrDevice": "meter-1", "search": "energy"})
+tool(16, "read_named", {"device": "meter-1", "keys": ["voltage", "energy", "energy_sf", "state", "relay", "reset"]})
+tool(17, "read_named", {"device": "meter-1", "keys": ["nope"]})
 tool(13, "watch_address", {"device": "meter-1", "address": "hr:0", "type": "float32", "byteOrder": "CDAB", "durationSeconds": 2, "intervalMs": 500})
 p.stdin.close(); p.wait(timeout=10); print("\nEXIT", p.returncode); print("STDERR:", p.stderr.read()[:500])
