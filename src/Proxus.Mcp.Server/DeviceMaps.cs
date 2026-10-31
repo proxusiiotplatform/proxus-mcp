@@ -22,6 +22,9 @@ public sealed class DeviceMap
     public List<JsonElement> Verified { get; set; } = [];
     public List<MapRegister> Registers { get; set; } = [];
 
+    /// <summary>SHA-256 of the map's register content, as tools/maps.py build computes it; verification reports name it.</summary>
+    public string? ContentSha256 { get; set; }
+
     public string DefaultByteOrder => Connection.DefaultByteOrder ?? "ABCD";
 }
 

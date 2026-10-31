@@ -63,11 +63,19 @@ builder.Services
     .WithTools<DeviceTools>()
     .WithTools<ModbusTools>()
     .WithTools<MapTools>()
+    .WithTools<VerifyTools>(ToolArguments())
     .WithTools<OpcUaTools>()
     .WithTools<DiagnoseTools>();
 
 await builder.Build().RunAsync();
 return 0;
+
+static JsonSerializerOptions ToolArguments()
+{
+    var options = new JsonSerializerOptions(ModelContextProtocol.McpJsonUtilities.DefaultOptions);
+    options.TypeInfoResolverChain.Insert(0, ToolArgumentsJsonContext.Default);
+    return options;
+}
 
 static string? ArgumentValue(string[] arguments, string name)
 {

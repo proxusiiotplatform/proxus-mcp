@@ -43,6 +43,7 @@ internal static class ToolOutput
 [JsonSerializable(typeof(MapSearchResult))]
 [JsonSerializable(typeof(DeviceMapView))]
 [JsonSerializable(typeof(NamedReadResult))]
+[JsonSerializable(typeof(VerifyResult))]
 internal sealed partial class ToolJsonContext : JsonSerializerContext
 {
     /// <summary>Unescaped output: device names and units such as °C stay readable for the model.</summary>
@@ -53,3 +54,8 @@ internal sealed partial class ToolJsonContext : JsonSerializerContext
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     });
 }
+
+/// <summary>Tool arguments that are not primitives; the MCP SDK needs their JSON contract under Native AOT.</summary>
+[JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[JsonSerializable(typeof(Confirmation[]))]
+internal sealed partial class ToolArgumentsJsonContext : JsonSerializerContext;

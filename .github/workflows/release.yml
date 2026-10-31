@@ -21,7 +21,7 @@ env:
   # Register maps built into the binaries: a commit of https://github.com/proxusiiotplatform/modbus-register-maps.
   # Pinned so a release is reproducible; move it forward to ship newer maps.
   MAPS_REPOSITORY: proxusiiotplatform/modbus-register-maps
-  MAPS_REF: f0d082a30e83e32aee6c94eec67ffcc5219b31a0
+  MAPS_REF: 73086fe67057c7477df50147e831568a83e8180d
 
 jobs:
   create:

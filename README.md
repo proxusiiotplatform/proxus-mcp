@@ -23,6 +23,7 @@ Gives AI assistants such as Claude Desktop, Cursor and VS Code read-only access 
 | `find_device_map` | Searches the register map library by vendor, model or alias, e.g. `PM5560` |
 | `get_device_map` | A map's registers (key, address, type, byte order, unit, scale), filtered by a search word |
 | `read_named` | Reads registers by key from the device's map and returns engineering values with units |
+| `verify_device_map` | Checks the device's map against the real device and prepares a hardware verification report (read-only) |
 
 Nothing can write to a device.
 
@@ -43,6 +44,15 @@ Give a Modbus device its map in the configuration, by id or as the path of a map
 `maps_dir` adds maps (or replaces built-in ones with the same id) from a folder of JSON files, as
 `python3 tools/maps.py build` in the collection writes them. A map that does not exist stops the server at start-up with the reason. Maps tell the assistant how to
 read a register, never to write one: `read_named` only reads.
+
+### Verify a map on your device
+
+Most maps are transcribed from vendor documents. Ask your assistant to verify the device's map: `verify_device_map`
+reads every register once (read-only), checks that the values are plausible (floats, frequency, voltage, power factor,
+energy counters, model) and asks you to compare two values with the device's display. The result is a report and a
+link that opens a prefilled issue in the map collection; you submit it under your own GitHub account, and a bot adds
+you to the map's verified list. Nothing is sent without you, and the report holds check results only, no addresses,
+host names or serial numbers.
 
 ## OPC UA security
 
