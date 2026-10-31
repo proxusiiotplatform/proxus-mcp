@@ -18,6 +18,10 @@ concurrency:
 env:
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
   DOTNET_NOLOGO: "1"
+  # Register maps built into the binaries: a commit of https://github.com/proxusiiotplatform/modbus-register-maps.
+  # Pinned so a release is reproducible; move it forward to ship newer maps.
+  MAPS_REPOSITORY: proxusiiotplatform/modbus-register-maps
+  MAPS_REF: f0d082a30e83e32aee6c94eec67ffcc5219b31a0
 
 jobs:
   create:
@@ -63,6 +67,26 @@ jobs:
           prerelease=""
           [[ "$TAG" == *-* ]] && prerelease="--prerelease"
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "proxus-mcp $TAG" --generate-notes $prerelease
+      - name: Register maps
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.MAPS_REPOSITORY }}
+          ref: ${{ env.MAPS_REF }}
+          path: register-maps
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Bundle the register maps and attach them to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          pip install pyyaml==6.0.2 jsonschema==4.23.0
+          python register-maps/tools/maps.py build register-maps/dist
+          python tools/bundle_maps.py register-maps/dist
+          cp src/Proxus.Mcp.Server/maps/register-maps.json.gz register-maps.json.gz
+          gh release upload "$TAG" register-maps.json.gz --repo "$GITHUB_REPOSITORY" --clobber
 
   build:
     needs: create
@@ -90,6 +114,11 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Register maps from the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download "${{ github.ref_name }}" --repo "$GITHUB_REPOSITORY" -p register-maps.json.gz -D src/Proxus.Mcp.Server/maps
+
       - name: Unit tests
         run: dotnet test tests/Proxus.Mcp.Tests -c Release
 
@@ -106,6 +135,12 @@ jobs:
           out=$(./publish/${{ matrix.exe }} --version)
           echo "$out"
           [[ "$out" == "proxus-mcp ${{ needs.create.outputs.version }}" ]]
+
+      - name: Has the built-in register maps
+        # Exits 2 with "no register map" when the maps were not embedded; with them it stops at end of input.
+        run: |
+          echo '{ "devices": { "m": { "host": "127.0.0.1", "map": "eastron/sdm630-modbus" } } }' > builtin-maps.json
+          ./publish/${{ matrix.exe }} --config builtin-maps.json < /dev/null
 
       - name: Archive and checksum
         id: archive

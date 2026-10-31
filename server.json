@@ -3,7 +3,7 @@
   "name": "io.github.proxusiiotplatform/proxus-mcp",
   "title": "Proxus Industrial MCP Server",
   "description": "Read-only Modbus TCP and OPC UA access to PLCs and industrial devices, with connection diagnostics",
-  "version": "0.1.0-beta.5",
+  "version": "0.1.0-beta.6",
   "websiteUrl": "https://proxus.io/tools/industrial-mcp-server",
   "repository": {
     "url": "https://github.com/proxusiiotplatform/proxus-mcp",
@@ -13,7 +13,7 @@
   "packages": [
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/proxusiiotplatform/proxus-mcp:0.1.0-beta.5",
+      "identifier": "ghcr.io/proxusiiotplatform/proxus-mcp:0.1.0-beta.6",
       "transport": {
         "type": "stdio"
       },

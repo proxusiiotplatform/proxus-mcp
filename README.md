@@ -30,7 +30,9 @@ Nothing can write to a device.
 
 With a register map the assistant reads `voltage_l1_n` instead of guessing that hr:0-1 is a word-swapped float.
 A map lists every register of a device model: address, data type, byte order, scale (fixed, or a SunSpec scale-factor
-register), unit and the meaning of enumerated values, with the vendor document it comes from.
+register), unit and the meaning of enumerated values, with the vendor document it comes from. The binaries include the
+open [Modbus Register Maps](https://github.com/proxusiiotplatform/modbus-register-maps) collection (energy meters, power
+analysers, drives, inverters); each release also attaches it as `register-maps.json.gz`.
 
 Give a Modbus device its map in the configuration, by id or as the path of a map's JSON file:
 
@@ -38,8 +40,8 @@ Give a Modbus device its map in the configuration, by id or as the path of a map
 "meter-1": { "protocol": "modbus-tcp", "host": "192.168.10.40", "map": "schneider-electric/pm5500-pm5600-pm5700" }
 ```
 
-`maps_dir` adds maps (or replaces built-in ones with the same id) from a folder of JSON files in the Modbus Register
-Maps format. A map that does not exist stops the server at start-up with the reason. Maps tell the assistant how to
+`maps_dir` adds maps (or replaces built-in ones with the same id) from a folder of JSON files, as
+`python3 tools/maps.py build` in the collection writes them. A map that does not exist stops the server at start-up with the reason. Maps tell the assistant how to
 read a register, never to write one: `read_named` only reads.
 
 ## OPC UA security
